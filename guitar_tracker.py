@@ -3,16 +3,14 @@ import cv2
 from pygame import mixer
 
 
-cap = cv2.VideoCapture(0)
-
 WIDTH, HEIGHT = (640, 480)
 
 DELIMITER_LEFT = int(WIDTH / 3)
 DELIMITER_RIGHT = int(WIDTH / 1.5)
 
-GREEN_PIXEL = [0, 255, 0]
-RED_RANGE = (np.array([0, 120, 135]), np.array([10, 255, 255]))
-# ORANGE_RANGE = (np.array([8, 40, 140]), np.array([23, 220, 255]))
+GREEN = [0, 255, 0]
+BLUE = [255, 0, 0]
+RED_RANGE = (np.array([0, 120, 150]), np.array([10, 255, 255]))
 
 # Initialize PyGame Mixer to play WAV files
 mixer.init()
@@ -20,7 +18,11 @@ F5 = mixer.Sound("F.wav")
 G5 = mixer.Sound("G.wav")
 A5 = mixer.Sound("Am.wav")
 
-CHANNEL = mixer.Channel(0)
+REGION_POSITIONS = {
+    F5: ((0, 0), (DELIMITER_LEFT, HEIGHT)),
+    G5: ((DELIMITER_LEFT, 0), (DELIMITER_RIGHT, HEIGHT)),
+    A5: ((DELIMITER_RIGHT, 0), (WIDTH, HEIGHT))
+}
 
 
 def play_chord(width):
@@ -46,10 +48,19 @@ def play_chord(width):
             CHANNEL.play(A5)
 
 
+def paint_region(frame, sound):
+    region_start, region_end = REGION_POSITIONS[sound]
+    overlay = frame.copy()
+
+    overlay = cv2.rectangle(overlay, region_start, region_end, BLUE, -1)
+
+    return cv2.addWeighted(overlay, 0.2, frame, 0.8, 0, frame)
+
+
 def main():
     while not (cv2.waitKey(1) & 0xFF == ord('q')):
         # Capture frame-by-frame
-        _, frame = cap.read()
+        _, frame = capture.read()
 
         # Convert to HSV
         hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
@@ -71,21 +82,33 @@ def main():
             width, _ = avg
             play_chord(width)
 
+        sound = CHANNEL.get_sound()
+
+        if sound:
+            frame = paint_region(frame, sound)
+
         # Paint the delimiters on the video
-        for i in range(HEIGHT):
-            frame[i][DELIMITER_LEFT] = GREEN_PIXEL
-            frame[i][DELIMITER_RIGHT] = GREEN_PIXEL
+        cv2.line(frame, (DELIMITER_LEFT, 0),
+                 (DELIMITER_LEFT, HEIGHT), GREEN, 2)
+        cv2.line(frame, (DELIMITER_RIGHT, 0),
+                 (DELIMITER_RIGHT, HEIGHT), GREEN, 2)
 
         # Display the resulting frame
         cv2.imshow('Guitar Tracker', frame)
 
 
 if __name__ == "__main__":
+    # Initialize video capture
+    capture = cv2.VideoCapture(0)
+
+    # Initialize audio channel
+    CHANNEL = mixer.Channel(0)
+
     main()
 
     # Stop sound
     CHANNEL.stop()
 
     # When everything done, release the capture
-    cap.release()
+    capture.release()
     cv2.destroyAllWindows()
