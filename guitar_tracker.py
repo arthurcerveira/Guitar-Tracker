@@ -12,16 +12,16 @@ GREEN = [0, 255, 0]
 BLUE = [255, 0, 0]
 RED_RANGE = (np.array([0, 120, 150]), np.array([10, 255, 255]))
 
-# Initialize PyGame Mixer to play WAV files
+# Initialize mixer to play WAV files
 mixer.init()
-F5 = mixer.Sound("F.wav")
-G5 = mixer.Sound("G.wav")
-A5 = mixer.Sound("Am.wav")
+Bm7 = mixer.Sound("assests/Bm7.wav")
+Fsharpm7 = mixer.Sound("assests/F#m7.wav")
+Em7 = mixer.Sound("assests/Em7.wav")
 
 REGION_POSITIONS = {
-    F5: ((0, 0), (DELIMITER_LEFT, HEIGHT)),
-    G5: ((DELIMITER_LEFT, 0), (DELIMITER_RIGHT, HEIGHT)),
-    A5: ((DELIMITER_RIGHT, 0), (WIDTH, HEIGHT))
+    Bm7: ((0, 0), (DELIMITER_LEFT, HEIGHT)),
+    Fsharpm7: ((DELIMITER_LEFT, 0), (DELIMITER_RIGHT, HEIGHT)),
+    Em7: ((DELIMITER_RIGHT, 0), (WIDTH, HEIGHT))
 }
 
 
@@ -29,32 +29,32 @@ def play_chord(width):
     # First region
     if width <= DELIMITER_LEFT:
         if CHANNEL.get_busy():
-            CHANNEL.queue(F5)
+            CHANNEL.queue(Bm7)
         else:
-            CHANNEL.play(F5)
+            CHANNEL.play(Bm7)
 
     # Second region
     elif width <= DELIMITER_RIGHT:
         if CHANNEL.get_busy():
-            CHANNEL.queue(G5)
+            CHANNEL.queue(Fsharpm7)
         else:
-            CHANNEL.play(G5)
+            CHANNEL.play(Fsharpm7)
 
     # Third region
     else:
         if CHANNEL.get_busy():
-            CHANNEL.queue(A5)
+            CHANNEL.queue(Em7)
         else:
-            CHANNEL.play(A5)
+            CHANNEL.play(Em7)
 
 
 def paint_region(frame, sound):
     region_start, region_end = REGION_POSITIONS[sound]
     overlay = frame.copy()
 
-    overlay = cv2.rectangle(overlay, region_start, region_end, BLUE, -1)
+    cv2.rectangle(overlay, region_start, region_end, BLUE, -1)
 
-    return cv2.addWeighted(overlay, 0.2, frame, 0.8, 0, frame)
+    cv2.addWeighted(overlay, 0.2, frame, 0.8, 0, frame)
 
 
 def main():
@@ -78,14 +78,14 @@ def main():
         points = cv2.findNonZero(mask)
 
         if points is not None:
-            avg = np.mean(points, axis=0)[0]
-            width, _ = avg
+            average = np.mean(points, axis=0)[0]
+            width, height = average
             play_chord(width)
 
         sound = CHANNEL.get_sound()
 
         if sound:
-            frame = paint_region(frame, sound)
+            paint_region(frame, sound)
 
         # Paint the delimiters on the video
         cv2.line(frame, (DELIMITER_LEFT, 0),
