@@ -2,15 +2,18 @@ import numpy as np
 import cv2
 from pygame import mixer
 
+DEBUG = False
 
 WIDTH, HEIGHT = (640, 480)
 
 DELIMITER_LEFT = int(WIDTH / 3)
 DELIMITER_RIGHT = int(WIDTH / 1.5)
 
-GREEN = [0, 255, 0]
-BLUE = [255, 0, 0]
-RED_RANGE = (np.array([0, 120, 150]), np.array([10, 255, 255]))
+BLACK = (0, 0, 0)
+BLUE = (255, 0, 0)
+WHITE = (255, 255, 255)
+
+RED_RANGE = (np.array((0, 120, 150)), np.array((10, 255, 255)))
 
 # Initialize mixer to play WAV files
 mixer.init()
@@ -22,6 +25,17 @@ REGION_POSITIONS = {
     Bm7: ((0, 0), (DELIMITER_LEFT, HEIGHT)),
     Fsharpm7: ((DELIMITER_LEFT, 0), (DELIMITER_RIGHT, HEIGHT)),
     Em7: ((DELIMITER_RIGHT, 0), (WIDTH, HEIGHT))
+}
+
+# Text properties
+FONT = cv2.FONT_HERSHEY_SIMPLEX
+TEXT_OFFSET = 5
+TEXT_HEIGHT = HEIGHT - 10
+
+CHORDS = {
+    'Bm': (TEXT_OFFSET, TEXT_HEIGHT),
+    'F#m': (DELIMITER_LEFT + TEXT_OFFSET, TEXT_HEIGHT),
+    'Em': (DELIMITER_RIGHT + TEXT_OFFSET, TEXT_HEIGHT)
 }
 
 
@@ -84,16 +98,25 @@ def main():
 
         sound = CHANNEL.get_sound()
 
-        if sound:
+        if sound is not None:
             paint_region(frame, sound)
 
         # Paint the delimiters on the video
         cv2.line(frame, (DELIMITER_LEFT, 0),
-                 (DELIMITER_LEFT, HEIGHT), GREEN, 2)
+                 (DELIMITER_LEFT, HEIGHT), BLACK, 2)
         cv2.line(frame, (DELIMITER_RIGHT, 0),
-                 (DELIMITER_RIGHT, HEIGHT), GREEN, 2)
+                 (DELIMITER_RIGHT, HEIGHT), BLACK, 2)
+
+        # Write chords in frame
+        for chord, position in CHORDS.items():
+            cv2.putText(frame, chord, position,
+                        FONT, 1, WHITE, 2)
 
         # Display the resulting frame
+        if DEBUG is True:
+            mask = cv2.cvtColor(mask, cv2.COLOR_GRAY2BGR)
+            cv2.addWeighted(mask, 0.5, frame, 0.5, 0, frame)
+
         cv2.imshow('Guitar Tracker', frame)
 
 
